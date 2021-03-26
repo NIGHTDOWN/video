@@ -14,6 +14,8 @@ import 'package:zego_faceunity_plugin_example/utils/base.dart';
 
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
+import 'tool/image.dart';
+
 class Sellpage extends LoginBase {
   bool select;
   String api = 'Course/getLiveClassSeries';
@@ -68,8 +70,6 @@ class Sellpage extends LoginBase {
   Sellpage({Key key});
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    d(courses);
     return SingleChildScrollView(
         child: Container(
       color: Color.fromRGBO(0, 0, 0, 0.8),
@@ -88,7 +88,7 @@ class Sellpage extends LoginBase {
                   height: 100.0,
                   child: ListView.builder(
                       shrinkWrap: true,
-                      scrollDirection: Axis.horizontal,
+                      // scrollDirection: Axis.horizontal,
                       itemCount: courses.length,
                       itemBuilder: (BuildContext context, int index) {
                         return Column(children: [
@@ -169,6 +169,20 @@ class Sellpage extends LoginBase {
   }
 
   Widget beatbtn(int index) {
+    return Row(
+      children: [
+        Expanded(
+            child: CupertinoButton(
+                borderRadius: BorderRadius.circular(0.0),
+                child: Row(
+                  children: [
+//图片
+                    NgImage(courses[index]['pic']),
+//文字
+                  ],
+                )))
+      ],
+    );
     return CupertinoButton(
       // padding: const EdgeInsets.all(10.0),
       pressedOpacity: 1.0,
