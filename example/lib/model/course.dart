@@ -1,5 +1,7 @@
 import 'package:zego_faceunity_plugin_example/tool/function.dart';
 
+import 'sec.dart';
+
 class Course {
   //  "course_id": 6,//id
   //     "course_name": "如何养生234",//标题
@@ -25,6 +27,36 @@ class Course {
   int flag;
   int coursenum;
   int isfree;
+  //课时
+  List tmpsecs;
+  List<Sec> secs = [];
+  getsec() async {
+    String cachename = 'secs' + this.id.toString() + '_' + type.toString();
+    String cachenameindex =
+        'secs' + this.id.toString() + '_' + type.toString() + 'time';
+    //拉缓存
+    tmpsecs = getcache(cachename);
+
+    if (isnull(getcache(cachenameindex))) {
+      //缓存时间没到期,直接使用缓存
+      return;
+    }
+    //拉http
+    tmpsecs = await Sec.gethttpsecs(this);
+
+    if (isnull(tmpsecs)) {
+      setcache(cachename, tmpsecs, '-1');
+      setcache(cachenameindex, tmpsecs, '30');
+    }
+  }
+
+  initsec() async {
+    await getsec();
+    int i = 1;
+    for (var item in tmpsecs) {
+      secs.add(Sec.fromJson(item, this, i++));
+    }
+  }
 
   Course.fromJson(data) {
     this.id = data['course_id'];

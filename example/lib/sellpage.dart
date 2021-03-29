@@ -7,6 +7,8 @@ import 'package:zego_faceunity_plugin/zego_faceunity_plugin.dart';
 
 import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:zego_faceunity_plugin_example/model/course.dart';
+import 'package:zego_faceunity_plugin_example/model/sec.dart';
+import 'package:zego_faceunity_plugin_example/model/vip.dart';
 import 'package:zego_faceunity_plugin_example/tool/function.dart';
 import 'package:zego_faceunity_plugin_example/tool/global.dart';
 import 'package:zego_faceunity_plugin_example/tool/http.dart';
@@ -82,6 +84,7 @@ class Sellpage extends LoginBase {
   Sellpage({Key key});
   @override
   Widget build(BuildContext context) {
+    s('context', context);
     return SingleChildScrollView(
         child: !editing
             ? Container(
@@ -338,17 +341,60 @@ class Sellpage extends LoginBase {
                 gettitle('活动结束时间'),
                 getinut('请输入价格', acttime),
                 gettitle('课时配置'),
+
                 Container(
-                  height: g('h') * 0.3,
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: 1,
-                      ),
                       Column(
                         children: [
+                          Container(
+                            height: g('h') * 0.3,
+                            width: g('w') * 0.35,
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: [
+                                secbtn(
+                                    '全选',
+                                    selectsec.length >= coursein.tmpsecs.length,
+                                    secall),
+                                Column(
+                                  children: getseclist(),
+                                )
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                      Expanded(
+                          child: Container(
+                        child: Center(
+                          child: SizedBox(
+                            width: 1,
+                            height: g('h') * 0.3,
+                            child: DecoratedBox(
+                              decoration:
+                                  BoxDecoration(color: Color(0xff414352)),
+                            ),
+                          ),
+                        ),
+                      )),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          gettitle('配置费用类型'),
                           GestureDetector(
-                            child: Text('data'),
+                            child: Container(
+                              child: Text(sexname[isfree],
+                                  style: new TextStyle(
+                                      fontSize: 15, color: Colors.white)),
+                              margin: EdgeInsets.only(bottom: 10),
+                              padding: EdgeInsets.only(
+                                  top: 14.0, left: 14, right: 14, bottom: 14),
+                              decoration: BoxDecoration(
+                                  color: Color(0xff414352),
+                                  borderRadius: BorderRadius.circular(6.0)),
+                            ),
                             onTap: zxf,
                           ),
                         ],
@@ -366,13 +412,98 @@ class Sellpage extends LoginBase {
     );
   }
 
+//选中的章节
+
+  List selectsec = [];
+  getseclist() {
+    List<Widget> secwidget = [];
+    for (var i = 0; i < coursein.tmpsecs.length; i++) {
+      secwidget.add(getsecwidget(i));
+    }
+    return secwidget;
+  }
+
+  getsecwidget(index) {
+    //判断是否选中
+    //选中就变色
+    if (!isnull(coursein.secs)) {
+      return Container();
+    }
+    Sec thissec = coursein.secs[index];
+    int ins = selectsec.indexOf(index);
+    String txt = thissec.orders.toString() +
+        '|' +
+        (thissec.isfree
+            ? Vip.getindec(thissec.viplevel)['name']
+            : ("￥" + thissec.cost.toString()));
+    bool ison = ins != -1;
+    Function call = () {
+      secon(thissec);
+    };
+    return secbtn(txt, ison, call);
+  }
+
+  secon(Sec sec) {
+    int index = sec.orders - 1;
+    int ins = selectsec.indexOf(index);
+    if (ins != -1) {
+      selectsec.remove(index);
+    } else {
+      selectsec.add(index);
+    }
+    reflash();
+  }
+
+  secall() {
+    if (selectsec.length > 0) {
+//清空
+      selectsec = [];
+    } else {
+//全选
+      selectsec =
+          List<int>.generate(coursein.secs.length, (int index) => index);
+    }
+    reflash();
+  }
+
   zxf() {
     selectbox(context, _sex());
   }
 
+  secbtn(String txt, bool ison, Function call) {
+    var tn = new TextStyle(fontSize: 15, color: Colors.white);
+    var tun = new TextStyle(fontSize: 15, color: Color(0xff416FFF));
+    var bun = Color(0x20416FFF);
+    var bn = Color(0xff414352);
+    return GestureDetector(
+      child: Container(
+        width: g('w') * 0.35,
+        child: Center(
+          child: Text(txt, style: ison ? tun : tn),
+        ),
+        margin: EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.only(top: 6.0, left: 14, right: 14, bottom: 6),
+        decoration: BoxDecoration(
+            color: ison ? bun : bn,
+            border: !ison
+                ? Border.all(width: 1)
+                : new Border.all(
+                    //边框颜色
+                    color: new Color(0xFF416FFF),
+                    //边框宽1
+                    width: 1),
+            borderRadius: BorderRadius.circular(6.0)),
+      ),
+      onTap: () {
+        call();
+      },
+    );
+  }
+
+  String isfree = '0';
+  var sexname = {'0': '请选择', '1': lang('免费'), '2': lang('收费')};
   List<Widget> _sex() {
-    var values = {'1', '2'};
-    var sexname = {'1': lang('男'), '2': lang('女')};
+    var values = {'0', '1', '2'};
     return values.map((local) {
       return ListTile(
         title: Text(
@@ -382,15 +513,8 @@ class Sellpage extends LoginBase {
           //     color: local == sexid ? SQColor.primary : SQColor.darkGray),
         ),
         onTap: () {
-          // sexid = local;
-          // sex = sexname[local];
-          // Navigator.pop(context);
-          // if (sexid != user['sex'].toString() && sexid != '0') {
-          //   post = true;
-          // }
-          // if (sexid == '0') {
-          //   post = false;
-          // }
+          isfree = local;
+          pop(context);
           reflash();
         },
       );
@@ -408,9 +532,11 @@ class Sellpage extends LoginBase {
         '编辑',
         style: TextStyle(color: Colors.white, fontSize: 12),
       ),
-      onPressed: () {
+      onPressed: () async {
         coursein = course;
         editing = true;
+        await course.initsec();
+
         reflash();
       },
     );
