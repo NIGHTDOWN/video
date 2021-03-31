@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 
 import 'dart:core';
 
@@ -12,10 +15,12 @@ import 'package:zego_faceunity_plugin_example/model/vip.dart';
 import 'package:zego_faceunity_plugin_example/tool/function.dart';
 import 'package:zego_faceunity_plugin_example/tool/global.dart';
 import 'package:zego_faceunity_plugin_example/tool/http.dart';
+import 'package:zego_faceunity_plugin_example/tool/loadbox.dart';
 import 'package:zego_faceunity_plugin_example/utils/base.dart';
 
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
+import 'model/im.dart';
 import 'tool/image.dart';
 
 class Sellpage extends LoginBase {
@@ -25,16 +30,20 @@ class Sellpage extends LoginBase {
   static bool editing = false;
   //被编辑的课程
   static Course coursein;
-  static String api = 'Course/getLiveClassSeries';
+  static String api = 'SellGoods/getAllCourses';
   //课程列表
   static List courses = [];
   static String cacheindex = 'Sellpage';
   static String cachetime;
 
   static TextEditingController searword = new TextEditingController();
-  static TextEditingController cost = new TextEditingController();
+  // static TextEditingController cost = new TextEditingController();
   static TextEditingController seccost = new TextEditingController();
-  static TextEditingController acttime = new TextEditingController();
+  // static TextEditingController acttime = new TextEditingController();
+  static String actime;
+  FocusNode _focusNode = FocusNode();
+  bool loading = false;
+  var btnpadding = EdgeInsets.only(top: 6.0, left: 14, right: 14, bottom: 6);
   initState() {
     editing = false;
     cachetime = cacheindex + cacheindex.hashCode.toString();
@@ -62,7 +71,7 @@ class Sellpage extends LoginBase {
     var data = await http(
       api,
       {
-        'type': 'series',
+        // 'type': 'series',
         'page': '1',
         'limit': '30',
       },
@@ -77,6 +86,29 @@ class Sellpage extends LoginBase {
     }
   }
 
+  search(String word) async {
+    if (!isnull(word)) {
+      show(context, '请输入相关课程名称');
+      return;
+    }
+    var data = await http(
+      api,
+      {
+        'search': word,
+        'page': '1',
+        'limit': '30',
+      },
+      gethead(),
+    );
+    var ret = getdata(context, data);
+    if (isnull(ret)) {
+      courses = ret;
+      // setcache(cacheindex, ret, '-1');
+      // setcache(cachetime, 1, '30');
+      reflash();
+    }
+  }
+
   dispose() {
     // d(1111);
   }
@@ -85,7 +117,7 @@ class Sellpage extends LoginBase {
   @override
   Widget build(BuildContext context) {
     s('context', context);
-    return SingleChildScrollView(
+    Widget w = SingleChildScrollView(
         child: !editing
             ? Container(
                 color: Color.fromRGBO(0, 0, 0, 0.8),
@@ -117,6 +149,11 @@ class Sellpage extends LoginBase {
                   ],
                 ))
             : edit());
+    return Loadbox(
+      loading: loading,
+      child: w,
+      // bgColor: Colors.red,
+    );
   }
 
   //搜索框栏目
@@ -181,7 +218,7 @@ class Sellpage extends LoginBase {
   }
 
   _search() {
-    d(searword.text);
+    search(searword.text);
   }
 
   _clearword() {
@@ -192,7 +229,6 @@ class Sellpage extends LoginBase {
 
   Widget beatbtn(int index) {
     Course course = Course.fromJson(courses[index]);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -268,11 +304,19 @@ class Sellpage extends LoginBase {
                                               fontSize: 13)),
                                     ]),
                                 Expanded(child: SizedBox()),
-                                editbtn(course),
+                                editbtn('编辑', course, () {
+                                  _edit(course);
+                                }),
                                 SizedBox(
                                   width: 8,
                                 ),
-                                editbtn(course),
+                                editbtn('上架', course, () {
+                                  d('直接上架');
+                                  if (!course.up) {
+                                    course.up = true;
+                                    Im.sendGood(course);
+                                  }
+                                }),
                               ],
                             ),
                           ]),
@@ -295,8 +339,9 @@ class Sellpage extends LoginBase {
     );
   }
 
-  getinut(String hint, TextEditingController control) {
+  getinut(String hint, TextEditingController control, [FocusNode node]) {
     var inputField = new TextFormField(
+      focusNode: isnull(node) ? node : null,
       maxLines: 1,
       controller: control,
       onChanged: (str) {
@@ -304,7 +349,7 @@ class Sellpage extends LoginBase {
       },
       onEditingComplete: () {},
       decoration: new InputDecoration(
-          contentPadding: EdgeInsets.only(top: -4.0, left: 14, right: 14),
+          contentPadding: EdgeInsets.only(left: 14, right: 14, top: -8),
           hintText: hint,
           hintStyle: new TextStyle(color: Color(0xff414352)),
           border: InputBorder.none),
@@ -316,7 +361,53 @@ class Sellpage extends LoginBase {
       onSaved: (value) {},
     );
     return Container(
-      child: inputField,
+      child: Center(
+        child: inputField,
+      ),
+      height: 40,
+      width: 100,
+      margin: EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+          color: Color(0xff414352), borderRadius: BorderRadius.circular(6.0)),
+    );
+  }
+
+  getinutcost(String hint, TextEditingController control, [FocusNode node]) {
+    var inputField = new TextFormField(
+      focusNode: isnull(node) ? node : null,
+      maxLines: 1,
+      controller: control,
+      onChanged: (str) {
+        // ? haveword = true : haveword = false;
+        // RegExp reg = new RegExp(r'^\d{1}[\d,\.]{0,}$');
+        // if (!reg.hasMatch(str)) {
+        //   d(str);
+        //   return '';
+        // }
+      },
+      onEditingComplete: () {},
+      decoration: new InputDecoration(
+          contentPadding: EdgeInsets.only(left: 14, right: 14, top: -8),
+          hintText: hint,
+          hintStyle: new TextStyle(color: Colors.white),
+          border: InputBorder.none),
+      style: new TextStyle(fontSize: 15, color: Colors.white),
+      //验证
+      validator: (String value) {
+        // RegExp reg = new RegExp(r'^\d{11}$');
+        // if (!reg.hasMatch(value)) {
+        //   return '请输入正确金额';
+        // }
+        return null;
+      },
+      onSaved: (value) {},
+    );
+    return Container(
+      child: Center(
+        child: inputField,
+      ),
+      height: 40,
+      width: 100,
       margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
           color: Color(0xff414352), borderRadius: BorderRadius.circular(6.0)),
@@ -324,7 +415,8 @@ class Sellpage extends LoginBase {
   }
 
   Widget edit() {
-    return Container(
+    Widget w = Container(
+      padding: EdgeInsets.only(left: 20, right: 20, top: 10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -339,15 +431,25 @@ class Sellpage extends LoginBase {
                 // gettitle('修改直播间优惠价格'),
                 // getinut('请输入价格', cost),
                 gettitle('活动结束时间'),
-                getinut('请输入价格', acttime),
-                gettitle('课时配置'),
-
+                Row(
+                  children: [
+                    Expanded(
+                        child: secbtn(
+                            !isnull(actime) ? '请选择活动结束时间' : actime, false, () {
+                      picktime();
+                    })),
+                    // Expanded(child: getinut('请输入价格', acttime, _focusNode))
+                  ],
+                ),
                 Container(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          gettitle('课时列表'),
                           Container(
                             height: g('h') * 0.3,
                             width: g('w') * 0.35,
@@ -371,7 +473,7 @@ class Sellpage extends LoginBase {
                         child: Center(
                           child: SizedBox(
                             width: 1,
-                            height: g('h') * 0.3,
+                            height: g('h') * 0.2,
                             child: DecoratedBox(
                               decoration:
                                   BoxDecoration(color: Color(0xff414352)),
@@ -379,40 +481,169 @@ class Sellpage extends LoginBase {
                           ),
                         ),
                       )),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          gettitle('配置费用类型'),
-                          GestureDetector(
-                            child: Container(
-                              child: Text(sexname[isfree],
-                                  style: new TextStyle(
-                                      fontSize: 15, color: Colors.white)),
-                              margin: EdgeInsets.only(bottom: 10),
-                              padding: EdgeInsets.only(
-                                  top: 14.0, left: 14, right: 14, bottom: 14),
-                              decoration: BoxDecoration(
-                                  color: Color(0xff414352),
-                                  borderRadius: BorderRadius.circular(6.0)),
-                            ),
-                            onTap: zxf,
-                          ),
-                        ],
-                      ),
+                      Container(
+                          // height: g('h') * 0.3,
+                          width: g('w') * 0.35,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              gettitle('配置费用类型'),
+                              selectboxw(sexname[isfree], zxf),
+                              isfree == '1'
+                                  ? selectboxw(
+                                      Vip.getindec(viplevel)['name'], setvip)
+                                  : Container(),
+                              isfree == '2'
+                                  ? Row(
+                                      children: [
+                                        Expanded(
+                                            child:
+                                                getinutcost('请输入价格', seccost))
+                                      ],
+                                    )
+                                  : Container(),
+                              Row(
+                                children: [
+                                  Expanded(
+                                      child: btn('设置选中', Color(0xffFF1425), () {
+                                    //循环设置各个章节
+                                    if (isfree == '0') {
+                                      show(context, '请选择费用类型');
+                                      return '';
+                                    }
+                                    if (selectsec.length <= 0) {
+                                      show(context, '请选择要设置的课时');
+                                      return '';
+                                    }
+                                    double coin;
+                                    RegExp reg =
+                                        new RegExp(r'^\d{1}[\d,\.]{0,}$');
+
+                                    for (var index in selectsec) {
+                                      if (isfree == '1') {
+                                        coursein.secs[index].setvip(viplevel);
+                                      }
+                                      if (isfree == '2') {
+                                        if (!reg.hasMatch(seccost.text)) {
+                                          d('请输入正确的金额');
+                                          return '';
+                                        }
+                                        coin = double.parse(seccost.text);
+                                        coursein.secs[index].setcost(coin);
+                                      }
+                                    }
+                                    //取消全选
+                                    secall();
+                                  }))
+                                ],
+                              ),
+                            ],
+                          )),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          Row(),
-          Row(),
+          SizedBox(
+            height: 10,
+          ),
+          Row(
+            children: [
+              Expanded(
+                  child: btn('确定并上架', Color(0xff416FFF), () async {
+                //这里生成post数据
+                loading = true;
+                reflash();
+
+                var post = {
+                  'course_id': coursein.id,
+                  'sec_data': jsonEncode(coursein.getsecjson()),
+                  'event_time': actime,
+                  'from_sec_id': ZegoConfig.instance.streamID,
+                };
+                //生成活动id
+
+                //发送消息
+                var ret = await createact(post);
+                if (isnull(ret)) {
+                  d('send');
+                  d(ret);
+                  Im.sendGood(coursein, ret['act_id'], ret['all_price']);
+                  //弹出
+                  pop(context);
+                }
+                // Im.sendGood(coursein);
+                loading = false;
+                reflash();
+              })),
+            ],
+          ),
+          SizedBox(
+            height: 10,
+          ),
         ],
       ),
     );
+
+    return w;
+  }
+
+  //创建活动
+  createact(post) async {
+    String actapi = 'SellGoods/putOnCourse';
+    var data = await http(actapi, post, gethead());
+    var ret = getdata(context, data);
+    if (isnull(ret)) {
+      return ret;
+    }
+    return null;
+  }
+
+  picktime() {
+    // DateTimePickerModel
+    DatePicker.showDateTimePicker(context,
+        locale: LocaleType.zh,
+        // 是否展示顶部操作按钮
+        showTitleActions: true,
+        // 最小时间
+        // minTime: DateTime(2018, 3, 5),
+        // 最大时间
+        minTime: DateTime.now(),
+        // change事件
+        onChanged: (date) {},
+        // 确定事件
+        onConfirm: (date) {
+      actime = date.toString();
+
+      reflash();
+    });
   }
 
 //选中的章节
+  Widget selectboxw(String txt, Function call) {
+    Widget opetion = GestureDetector(
+      child: Container(
+        // width: g('w') * 0.35,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Text(txt, style: new TextStyle(fontSize: 15, color: Colors.white)),
+            Icon(Icons.arrow_drop_down),
+          ],
+        ),
+        margin: EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.only(top: 6.0, left: 14, right: 0, bottom: 6),
+        decoration: BoxDecoration(
+            color: Color(0xff414352), borderRadius: BorderRadius.circular(6.0)),
+      ),
+      onTap: call,
+    );
+    return Row(
+      children: [Expanded(child: opetion)],
+    );
+  }
 
   List selectsec = [];
   getseclist() {
@@ -470,6 +701,10 @@ class Sellpage extends LoginBase {
     selectbox(context, _sex());
   }
 
+  setvip() {
+    selectbox(context, _vip());
+  }
+
   secbtn(String txt, bool ison, Function call) {
     var tn = new TextStyle(fontSize: 15, color: Colors.white);
     var tun = new TextStyle(fontSize: 15, color: Color(0xff416FFF));
@@ -482,7 +717,7 @@ class Sellpage extends LoginBase {
           child: Text(txt, style: ison ? tun : tn),
         ),
         margin: EdgeInsets.only(bottom: 10),
-        padding: EdgeInsets.only(top: 6.0, left: 14, right: 14, bottom: 6),
+        padding: btnpadding,
         decoration: BoxDecoration(
             color: ison ? bun : bn,
             border: !ison
@@ -500,7 +735,7 @@ class Sellpage extends LoginBase {
     );
   }
 
-  String isfree = '0';
+  static String isfree = '0';
   var sexname = {'0': '请选择', '1': lang('免费'), '2': lang('收费')};
   List<Widget> _sex() {
     var values = {'0', '1', '2'};
@@ -513,6 +748,17 @@ class Sellpage extends LoginBase {
           //     color: local == sexid ? SQColor.primary : SQColor.darkGray),
         ),
         onTap: () {
+          //取消聚焦
+          FocusScope.of(context).requestFocus(FocusNode());
+          if (local == '0') {
+            show(context, '请选择费用类型');
+            return;
+          }
+          if (local == '1') {}
+          if (local == '2') {
+            // 聚焦
+            // FocusScope.of(context).requestFocus(_focusNode);/
+          }
           isfree = local;
           pop(context);
           reflash();
@@ -521,7 +767,43 @@ class Sellpage extends LoginBase {
     }).toList();
   }
 
-  Widget editbtn(Course course) {
+  int viplevel = 0;
+  List<Widget> _vip() {
+    List values = Vip.getvipkey();
+    return values.map((local) {
+      return ListTile(
+        title: Text(
+          Vip.getindec(local)['name'],
+          textAlign: TextAlign.center,
+        ),
+        onTap: () {
+          viplevel = local;
+          d(viplevel);
+          pop(context);
+          reflash();
+        },
+      );
+    }).toList();
+  }
+
+  Widget btn(String txt, Color color, Function fun) {
+    return CupertinoButton(
+      padding: btnpadding,
+      minSize: 30,
+      pressedOpacity: 1.0,
+      borderRadius: BorderRadius.circular(6.0),
+      color: color,
+      child: Text(
+        txt,
+        style: TextStyle(color: Colors.white, fontSize: 15),
+      ),
+      onPressed: () async {
+        fun();
+      },
+    );
+  }
+
+  Widget editbtn(String title, Course course, Function call) {
     return CupertinoButton(
       padding: const EdgeInsets.all(6.0),
       minSize: 30,
@@ -529,16 +811,19 @@ class Sellpage extends LoginBase {
       borderRadius: BorderRadius.circular(6.0),
       color: Color(0xffFF8A00),
       child: Text(
-        '编辑',
+        title,
         style: TextStyle(color: Colors.white, fontSize: 12),
       ),
       onPressed: () async {
-        coursein = course;
-        editing = true;
-        await course.initsec();
-
-        reflash();
+        call();
       },
     );
+  }
+
+  _edit(Course course) async {
+    coursein = course;
+    editing = true;
+    await course.initsec();
+    reflash();
   }
 }

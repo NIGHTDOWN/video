@@ -22,6 +22,16 @@ class Sec {
   //课时
 
   getsec() {}
+  setcost(double coin) {
+    isfree = false;
+    cost = coin;
+  }
+
+  setvip(int tmpviplevel) {
+    isfree = true;
+    viplevel = tmpviplevel;
+  }
+
   Sec.fromJson(data, Course course, int listorders) {
     // d(data);
     id = data['sec_id'];
@@ -35,18 +45,28 @@ class Sec {
   }
   //远程拉取章节列表
   static gethttpsecs(Course course) async {
-    String api = '/Course/getLiveChaptersList';
+    String api = '/SellGoods/getListOfSec';
     var data = {
       'course_id': course.id,
-      'type': 'list',
-      'page': '0',
-      'limit': '30',
+      // 'type': 'list',
+      // 'page': '0',
+      // 'limit': '30',
     };
     var httpdata = await http(api, data, gethead());
     var ret = getdata(g('context'), httpdata);
-    if (isnull(ret, 'sec_list')) {
-      return ret['sec_list'];
+    if (isnull(ret)) {
+      return ret;
     }
     return null;
+  }
+
+  tojson() {
+    return {
+      "sec_id": id,
+      "list_orders": orders,
+      "sec_vip_level": viplevel,
+      "sec_cost": cost,
+      "is_free": isfree
+    };
   }
 }

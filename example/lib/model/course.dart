@@ -27,6 +27,8 @@ class Course {
   int flag;
   int coursenum;
   int isfree;
+  //上架标识
+  bool up = false;
   //课时
   List tmpsecs;
   List<Sec> secs = [];
@@ -48,6 +50,14 @@ class Course {
       setcache(cachename, tmpsecs, '-1');
       setcache(cachenameindex, tmpsecs, '30');
     }
+  }
+
+  List getsecjson() {
+    List ret = [];
+    for (var item in secs) {
+      ret.add(item.tojson());
+    }
+    return ret;
   }
 
   initsec() async {

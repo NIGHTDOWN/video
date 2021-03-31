@@ -9,8 +9,12 @@ import 'package:zego_faceunity_plugin/zego_faceunity_plugin.dart';
 import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:zego_faceunity_plugin_example/beauty_set.dart';
 import 'package:zego_faceunity_plugin_example/sellpage.dart';
+import 'package:zego_faceunity_plugin_example/tool/function.dart';
 
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
+
+import 'model/msg.dart';
+import 'tool/global.dart';
 
 // import 'manager/screen_capture_manager.dart';
 
@@ -115,7 +119,13 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
         print('Publish error: $errorCode');
       }
     };
-
+    ZegoExpressEngine.onIMRecvBroadcastMessage =
+        (String streamID, List<ZegoBroadcastMessageInfo> data) {
+      d('接收到消息');
+      d(streamID);
+      d(data[0].fromUser.userName);
+      show(context, data[0].message.toString());
+    };
     // 推流质量变化处理
     ZegoExpressEngine.onPublisherQualityUpdate =
         (String streamID, ZegoPublishStreamQuality quality) {
@@ -516,7 +526,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
         //       size: 30.0,
         //       color: Colors.white,
         //     ),
-        //     '屏幕',
+        //     '分享屏幕',
         //     sharepm),
         l2btn(
             Icon(
@@ -638,6 +648,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
               },
               child: _previewViewWidget),
         ),
+        showmsg(),
         _isPublishing
             ? hidebtn
                 ? Container()
@@ -645,5 +656,54 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
             : showPreviewToolPage(),
       ],
     ));
+  }
+
+  List msg = [
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+    {'msgtype': 5, 'data': '112233'},
+  ];
+  //消息显示款
+  Widget showmsg() {
+    return Positioned(
+        bottom: 94,
+        child: Container(
+          //宽度高度固定
+          margin: EdgeInsets.only(left: 20),
+          height: g('h') * 0.4,
+          width: g('w') * 0.6,
+          // color: Colors.blue,
+          child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: msg.length,
+              // ignore: missing_return
+              itemBuilder: (context, i) {
+                d(i);
+                return Msg.fromjson(msg[i], 1).getwidget();
+              }),
+        ));
   }
 }

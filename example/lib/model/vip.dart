@@ -13,4 +13,12 @@ class Vip {
   static getindec(int viplevel) {
     return vip[viplevel];
   }
+
+  static getvip() {
+    return vip;
+  }
+
+  static getvipkey() {
+    return List<int>.generate(vip.length, (int index) => index);
+  }
 }
