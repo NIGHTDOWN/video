@@ -561,6 +561,7 @@ class Sellpage extends LoginBase {
                   'course_id': coursein.id,
                   'sec_data': jsonEncode(coursein.getsecjson()),
                   'event_time': actime,
+                  'type': 1,
                   'from_sec_id': ZegoConfig.instance.streamID,
                 };
                 //生成活动id

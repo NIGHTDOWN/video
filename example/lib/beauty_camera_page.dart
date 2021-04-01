@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:media_projection_creator/media_projection_creator.dart';
@@ -116,16 +118,26 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
         ZegoConfig.instance.streamID = streamID;
         ZegoConfig.instance.saveConfig();
       } else {
-        print('Publish error: $errorCode');
+        d('Publish error: $errorCode');
       }
     };
+    //接收消息
     ZegoExpressEngine.onIMRecvBroadcastMessage =
-        (String streamID, List<ZegoBroadcastMessageInfo> data) {
+        (String streamID, List<ZegoBroadcastMessageInfo> datas) {
       d('接收到消息');
-      d(streamID);
-      d(data[0].fromUser.userName);
-      show(context, data[0].message.toString());
+      for (var data in datas) {
+        recvmsg(data.fromUser.userID, data.message);
+      }
     };
+    ZegoExpressEngine.onRoomUserUpdate =
+        (String msg, ZegoUpdateType type, List<ZegoUser> users) {
+      d('新增用户');
+      for (var user in users) {
+        recvroom(user.userID, type);
+      }
+    };
+    //接收房间消息
+
     // 推流质量变化处理
     ZegoExpressEngine.onPublisherQualityUpdate =
         (String streamID, ZegoPublishStreamQuality quality) {
@@ -168,6 +180,23 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
         _publishHeight = height;
       });
     };
+  }
+
+  //接收用户房间消息
+  recvroom(userid, ZegoUpdateType msg) {
+    Msg msgobj;
+    if (msg == ZegoUpdateType.Add) {
+      msgobj = Msg.inroom(userid);
+    } else {
+      msgobj = Msg.outroom(userid);
+    }
+    msgin(msgobj);
+  }
+
+  //接收用户消息
+  recvmsg(userid, msg) {
+    d(userid);
+    d(msg);
   }
 
   void startPreview(int viewID) {
@@ -247,7 +276,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
   void onVideoMirroModeChanged(int mode) {
     //ZegoExpressEngine.instance.setVideoMirrorMode(ZegoVideoMirrorMode.values[mode]);
   }
-
+//显示推流网络状态
   Widget showplayinfo() {
     return Container(
         child: Column(
@@ -339,6 +368,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     ));
   }
 
+//显示开始推流按钮
   Widget showPreviewToolPage() {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -474,6 +504,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     setState(() {});
   }
 
+//显示推流时按钮
   Widget showPublishingToolPage() {
     //显示直播状态的相关参数
     Widget l1btns = Row(
@@ -568,6 +599,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     );
   }
 
+//显示美颜设置
   void showBottomSettingPage() {
     setState(() {
       hidebtn = true;
@@ -583,6 +615,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     );
   }
 
+//显示卖货设置
   void showBottomsell() {
     setState(() {
       hidebtn = true;
@@ -658,52 +691,60 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     ));
   }
 
-  List msg = [
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-    {'msgtype': 5, 'data': '112233'},
-  ];
+  List msg = [];
   //消息显示款
+  ScrollController _scrollController = new ScrollController();
   Widget showmsg() {
     return Positioned(
         bottom: 94,
         child: Container(
-          //宽度高度固定
-          margin: EdgeInsets.only(left: 20),
-          height: g('h') * 0.4,
-          width: g('w') * 0.6,
-          // color: Colors.blue,
-          child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: msg.length,
-              // ignore: missing_return
-              itemBuilder: (context, i) {
-                d(i);
-                return Msg.fromjson(msg[i], 1).getwidget();
-              }),
-        ));
+            //宽度高度固定
+            margin: EdgeInsets.only(left: 20),
+            height: g('h') * 0.3,
+            width: g('w') * 0.6,
+            // color: Colors.blue,
+            child: ScrollConfiguration(
+              behavior: NonBehavior(),
+              child: ListView.builder(
+                  physics: BouncingScrollPhysics(),
+                  shrinkWrap: true,
+                  controller: _scrollController,
+                  reverse: true,
+                  itemCount: msg.length,
+                  // ignore: missing_return
+                  itemBuilder: (context, i) {
+                    // d(msg[i]);
+                    return msg[i].getwidget();
+                  }),
+            )));
+  }
+
+  msgin(Msg obj) {
+    //插入要显示的消息
+    setState(() {
+      msg.insert(0, obj);
+    });
+    _msglast();
+  }
+
+  _msglast() {
+    _scrollController.animateTo(
+      0.0,
+      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+}
+
+//去掉滚动水波纹效果
+class NonBehavior extends ScrollBehavior {
+  @override
+  Widget buildViewportChrome(
+      BuildContext context, Widget child, AxisDirection axisDirection) {
+    if (Platform.isAndroid || Platform.isFuchsia) {
+      return child;
+    } else {
+      return super.buildViewportChrome(context, child, axisDirection);
+    }
   }
 }

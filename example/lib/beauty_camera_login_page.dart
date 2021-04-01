@@ -58,9 +58,9 @@ class _BeautyCameraLoginPageState extends State<BeautyCameraLoginPage> {
 
     ZegoUser user =
         ZegoUser(ZegoConfig.instance.userID, ZegoConfig.instance.userName);
-
+    ZegoRoomConfig config = new ZegoRoomConfig(0, true, '');
     // 登入房间
-    ZegoExpressEngine.instance.loginRoom(roomID, user);
+    ZegoExpressEngine.instance.loginRoom(roomID, user, config: config);
 
     ZegoConfig.instance.roomID = roomID;
     ZegoConfig.instance.saveConfig();
@@ -86,6 +86,7 @@ class _BeautyCameraLoginPageState extends State<BeautyCameraLoginPage> {
     return microphoneStatus.isGranted && cameraStatus.isGranted;
   }
 
+ 
   void showPermissionTips() {
     showDialog(
         context: context,
