@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+
 import 'dart:ui' as ui;
 
 import 'package:zego_faceunity_plugin_example/conf/conf.dart';
@@ -409,4 +410,30 @@ toint(var str) {
     return int.parse(str);
   }
   return 0;
+}
+
+//强制竖屏
+screenS() async {
+  await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+}
+
+//强制横屏
+screenH() async {
+  await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+}
+
+//获取屏幕方向
+getscreeFx(context) {
+  Orientation now = MediaQuery.of(context).orientation;
+  // final orientation = NativeDeviceOrientationReader.orientation(context);
+  // d('Received new orientation: $orientation');
+  // d(now);
+  if (Orientation.portrait == now) {
+    //返回竖屏
+    return 's';
+  }
+  //返回横屏
+  return 'h';
 }

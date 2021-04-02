@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:media_projection_creator/media_projection_creator.dart';
+import 'package:orientation/orientation.dart';
 
 import 'dart:core';
 
@@ -10,38 +12,25 @@ import 'package:zego_faceunity_plugin/zego_faceunity_plugin.dart';
 
 import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:zego_faceunity_plugin_example/beauty_set.dart';
-import 'package:zego_faceunity_plugin_example/page/rtmpout/rtmpouts.dart';
+import 'package:zego_faceunity_plugin_example/model/msg.dart';
+import 'package:zego_faceunity_plugin_example/model/rtmpbase.dart';
+import 'package:zego_faceunity_plugin_example/page/msg/msgwidget.dart';
 import 'package:zego_faceunity_plugin_example/sellpage.dart';
 import 'package:zego_faceunity_plugin_example/tool/function.dart';
-import 'package:zego_faceunity_plugin_example/tool/url.dart';
+import 'package:zego_faceunity_plugin_example/tool/global.dart';
+import 'package:zego_faceunity_plugin_example/utils/base.dart';
 
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
-import 'model/msg.dart';
-import 'page/rtmpout/rtmpouth.dart';
-import 'tool/global.dart';
-
 // import 'manager/screen_capture_manager.dart';
 
-class BeautyCameraPage extends StatefulWidget {
-  final int screenWidthPx;
-  final int screenHeightPx;
-
-  BeautyCameraPage(this.screenWidthPx, this.screenHeightPx);
-
-  @override
-  _BeautyCameraPageState createState() => new _BeautyCameraPageState();
-}
-
-class _BeautyCameraPageState extends State<BeautyCameraPage> {
-  String _title = '开启推流';
+class RtmpOutH extends LoginBase {
   String _streamID = 's-beauty-camera';
 
   bool _isPublishing = false;
   bool hidebtn = false; //隐藏按钮
   int _previewViewID = -1;
-  Widget _previewViewWidget;
-  ZegoCanvas _previewCanvas;
+
   int beatnselect = 0;
   int _publishWidth = 0;
   int _publishHeight = 0;
@@ -52,58 +41,42 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
   double _publishAudioBitrate = 0.0;
   bool _isHardwareEncode = false;
   String _networkQuality = '';
-
   bool _isUseMic = true;
   bool _isUseFrontCamera = true;
-
+  int screenfx = 1; //横屏旋转方向
   TextEditingController _controller = new TextEditingController();
+
+  bool useSensor = false;
+  listScreenFx() {
+    OrientationPlugin.onOrientationChange.listen((value) {
+      if (!mounted) {
+        return;
+      }
+      if (DeviceOrientation.landscapeLeft == value && screenfx != 3) {
+        screenfx = 3;
+        reflash();
+      }
+      if (DeviceOrientation.landscapeRight == value && screenfx != 1) {
+        screenfx = 1;
+        reflash();
+      }
+      //这里旋转
+      // OrientationPlugin.forceOrientation(value);
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    //监听屏幕旋转
+    listScreenFx();
     // getpmpw();
     if (ZegoConfig.instance.streamID.isNotEmpty) {
       _controller.text = ZegoConfig.instance.streamID;
     }
-    //设置流 源 为摄像头
-    // ZegoFaceunityPlugin.instance
-    //     .setCustomVideoCaptureSource(ZegoCustomSourceType.Camera);
-    //配置自定义采集位置为屏幕 ZegoVideoBufferType.SurfaceTexture
-    // ZegoExpressEngine.instance.enableCustomVideoCapture(true,
-    //     config:
-    //         ZegoCustomVideoCaptureConfig(ZegoVideoBufferType.SurfaceTexture));
-    // ZegoExpressEngine.instance.enableCustomVideoCapture(true);
+    RtmpBase.instance.init();
 
-    // setPublisherCallback();
-
-    // if (ZegoConfig.instance.enablePlatformView) {
-    //   setState(() {
-    //     // Create a PlatformView Widget
-    //     _previewViewWidget =
-    //         ZegoExpressEngine.instance.createPlatformView((viewID) {
-    //       _previewViewID = viewID;
-
-    //       // Start preview using platform view
-    //       startPreview(viewID);
-    //     });
-    //   });
-    // } else {
-    //   // Create a Texture Renderer
-    //   //创建预览视频窗口
-    //   ZegoExpressEngine.instance
-    //       .createTextureRenderer(widget.screenWidthPx, widget.screenHeightPx)
-    //       .then((textureID) {
-    //     _previewViewID = textureID;
-
-    //     setState(() {
-    //       // Create a Texture Widget
-    //       _previewViewWidget = Texture(textureId: textureID);
-    //     });
-
-    //     // Start preview using texture renderer
-    //     startPreview(textureID);
-    //   });
-    // }
+    setPublisherCallback();
   }
 
   void setPublisherCallback() {
@@ -115,7 +88,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
       if (errorCode == 0) {
         setState(() {
           _isPublishing = true;
-          _title = '推送中..';
+          // _title = '推送中..';
         });
 
         ZegoConfig.instance.streamID = streamID;
@@ -124,21 +97,9 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
         d('Publish error: $errorCode');
       }
     };
+
     //接收消息
-    ZegoExpressEngine.onIMRecvBroadcastMessage =
-        (String streamID, List<ZegoBroadcastMessageInfo> datas) {
-      d('接收到消息');
-      for (var data in datas) {
-        recvmsg(data.fromUser.userID, data.message);
-      }
-    };
-    ZegoExpressEngine.onRoomUserUpdate =
-        (String msg, ZegoUpdateType type, List<ZegoUser> users) {
-      d('新增用户');
-      for (var user in users) {
-        recvroom(user.userID, type);
-      }
-    };
+
     //接收房间消息
 
     // 推流质量变化处理
@@ -185,95 +146,35 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     };
   }
 
-  //接收用户房间消息
-  recvroom(userid, ZegoUpdateType msg) {
-    Msg msgobj;
-    if (msg == ZegoUpdateType.Add) {
-      msgobj = Msg.inroom(userid);
-    } else {
-      msgobj = Msg.outroom(userid);
-    }
-    msgin(msgobj);
-  }
-
-  //接收用户消息
-  recvmsg(userid, msg) {
-    d(userid);
-    d(msg);
-  }
-
-  void startPreview(int viewID) {
-    // Set the preview canvas
-    _previewCanvas = ZegoCanvas.view(viewID);
-
-    // Start preview
-    ZegoExpressEngine.instance.startPreview(canvas: _previewCanvas);
-  }
-
   @override
   void dispose() {
     super.dispose();
-
-    // if (_isPublishing) {
-    //   // 销毁时停止推流
-    //   ZegoExpressEngine.instance.stopPublishingStream();
-    // }
-
-    // // 销毁预览界面
-    // ZegoExpressEngine.instance.stopPreview();
-
-    // // Unregister publisher callback
-    // ZegoExpressEngine.onPublisherStateUpdate = null;
-    // ZegoExpressEngine.onPublisherQualityUpdate = null;
-    // ZegoExpressEngine.onPublisherVideoSizeChanged = null;
-    // //删除canvas
-    // if (ZegoConfig.instance.enablePlatformView) {
-    //   // Destroy preview platform view
-    //   ZegoExpressEngine.instance.destroyPlatformView(_previewViewID);
-    // } else {
-    //   // Destroy preview texture renderer
-    //   ZegoExpressEngine.instance.destroyTextureRenderer(_previewViewID);
-    // }
-
-    // // Logout room
-    // //退出房间
-    // ZegoExpressEngine.instance.logoutRoom(ZegoConfig.instance.roomID);
-    // //移除视频源
-    // ZegoFaceunityPlugin.instance.removeCustomVideoCaptureSource();
-    // //
-    // ZegoExpressEngine.instance.enableCustomVideoCapture(false);
+    screenS();
+    if (_isPublishing) {
+      // 销毁时停止推流
+      ZegoExpressEngine.instance.stopPublishingStream();
+    }
   }
 
+  //推流
   void onPublishButtonPressed() {
     _streamID = _controller.text.trim();
-
     // Start publishing stream
     //开启推流
-    // ZegoExpressEngine.instance.startPublishingStream(_streamID);
-    gourl(context, RtmpOutS());
+    RtmpBase.instance.push(_streamID);
   }
 
   void onCamStateChanged() {
     _isUseFrontCamera = !_isUseFrontCamera;
-    //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
     //改变摄像头
-    ZegoFaceunityPlugin.instance.switchCamera(
-        _isUseFrontCamera ? ZegoCameraPosition.Front : ZegoCameraPosition.Back);
-  }
-
-  void onpmChanged() {
-    // _isUseFrontCamera = !_isUseFrontCamera;
-    //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
-    //改变摄像头
-    ZegoFaceunityPlugin.instance
-        .setCustomVideoCaptureSource(ZegoCustomSourceType.SurfaceTexture);
+    RtmpBase.instance.switchCamera(_isUseFrontCamera);
   }
 
   void onMicStateChanged() {
     setState(() {
       //关闭音频
       _isUseMic = !_isUseMic;
-      ZegoExpressEngine.instance.muteMicrophone(!_isUseMic);
+      RtmpBase.instance.micChanged(!_isUseMic);
     });
   }
 
@@ -430,32 +331,10 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
               height: 60.0,
               child: CupertinoButton(
                 child: Text(
-                  '竖屏推流',
+                  '开始推流',
                   style: TextStyle(color: Colors.white),
                 ),
-                onPressed: () async {
-                  await screenS(); //先横屏
-                  gourl(context, RtmpOutS());
-                },
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(0.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.0),
-                color: Color(0xee0e88eb),
-              ),
-              width: 240.0,
-              height: 60.0,
-              child: CupertinoButton(
-                child: Text(
-                  '横屏推流',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed: () async {
-                  await screenH(); //先横屏
-                  gourl(context, RtmpOutH());
-                },
+                onPressed: onPublishButtonPressed,
               ),
             )
           ],
@@ -464,72 +343,9 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     );
   }
 
-  //获取录屏授权
-  getpmpw() async {
-    int errorCode = await MediaProjectionCreator.createMediaProjection();
-    if (errorCode != MediaProjectionCreator.ERROR_CODE_SUCCEED) {
-      print('Can not get screen capture permission');
-      return false;
-    }
-  }
-
   //屏幕流对象
   // ScreenCaptureManager manager = ScreenCaptureManagerFactory.createManager();
   //分享屏幕
-  sharepm() async {
-    //停止推流
-    ZegoExpressEngine.instance.stopPublishingStream();
-    ZegoExpressEngine.instance.stopPreview();
-    //屏幕授权
-    if (ZegoConfig.instance.enablePlatformView) {
-      // Destroy preview platform view
-      ZegoExpressEngine.instance.destroyPlatformView(_previewViewID);
-    } else {
-      // Destroy preview texture renderer
-      ZegoExpressEngine.instance.destroyTextureRenderer(_previewViewID);
-    }
-    ZegoExpressEngine.instance.logoutRoom(ZegoConfig.instance.roomID);
-    //移除视频源
-    ZegoFaceunityPlugin.instance.removeCustomVideoCaptureSource();
-    //
-    ZegoExpressEngine.instance.enableCustomVideoCapture(false);
-
-    // await ZegoExpressEngine.createEngine(
-    //     appID, appSign, isTestEnv, ZegoScenario.General);
-    ZegoExpressEngine.createEngine(
-        ZegoConfig.instance.appID,
-        ZegoConfig.instance.appSign,
-        ZegoConfig.instance.isTestEnv,
-        ZegoScenario.values[0],
-        enablePlatformView: ZegoConfig.instance.enablePlatformView);
-
-    /// Developers need to write native Android code to access native ZegoExpressEngine
-    await ZegoExpressEngine.instance.enableCustomVideoCapture(true,
-        config:
-            ZegoCustomVideoCaptureConfig(ZegoVideoBufferType.SurfaceTexture));
-
-    await ZegoExpressEngine.instance.setVideoConfig(ZegoVideoConfig(
-        MediaQuery.of(context).size.width.toInt(),
-        MediaQuery.of(context).size.height.toInt(),
-        MediaQuery.of(context).size.width.toInt(),
-        MediaQuery.of(context).size.height.toInt(),
-        15,
-        3000,
-        ZegoVideoCodecID.Default));
-    // await ZegoExpressEngine.instance
-    //     .loginRoom(roomID, ZegoUser(userID, userName));
-    ZegoUser user =
-        ZegoUser(ZegoConfig.instance.userID, ZegoConfig.instance.userName);
-
-    // 登入房间
-    ZegoExpressEngine.instance.loginRoom(ZegoConfig.instance.roomID, user);
-    await ZegoExpressEngine.instance.startPublishingStream(_streamID);
-
-    // Start screen capture
-    // await manager.startScreenCapture();
-    // onPublishButtonPressed();
-    setState(() {});
-  }
 
 //显示推流时按钮
   Widget showPublishingToolPage() {
@@ -687,7 +503,7 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     if (_isPublishing) {
       // 销毁时停止推流
       _isPublishing = !_isPublishing;
-      ZegoExpressEngine.instance.stopPublishingStream();
+      RtmpBase.instance.stoppush();
       setState(() {});
     }
   }
@@ -701,13 +517,21 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  hidebtn = !hidebtn;
-                });
-              },
-              child: _previewViewWidget),
+            onTap: () {
+              setState(() {
+                hidebtn = !hidebtn;
+              });
+            },
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: Colors.yellow),
+              child: RotatedBox(
+                quarterTurns: screenfx, //旋转180度(2/4圈)
+                child: RtmpBase.instance.getviewWidget(),
+              ),
+            ),
+          ),
         ),
+        showmsg(),
         _isPublishing
             ? hidebtn
                 ? Container()
@@ -717,25 +541,10 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     ));
   }
 
-  List msg = [];
-  //消息显示款
-  ScrollController _scrollController = new ScrollController();
-
-  msgin(Msg obj) {
-    //插入要显示的消息
-    setState(() {
-      msg.insert(0, obj);
-    });
-    _msglast();
-  }
-
-  _msglast() {
-    _scrollController.animateTo(
-      0.0,
-      curve: Curves.easeOut,
-      duration: const Duration(milliseconds: 300),
+  Widget showmsg() {
+    return Positioned(
+      bottom: 94,
+      child: RtmpBase.instance.msgwidget,
     );
   }
 }
-
-//去掉滚动水波纹效果

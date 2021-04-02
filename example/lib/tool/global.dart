@@ -31,11 +31,13 @@ i() async {
     SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
   }
 
-  await globalKeys['cache'].init(); //加载缓存
+  // await globalKeys['cache'].init(); //加载缓存
   // await globalKeys['db'].open(dbname);
   // packageInfo = await PackageInfo.fromPlatform();
   // await initmblang();
   await Future.wait<dynamic>([
+    screenS(),
+    globalKeys['cache'].init()
     //耗时操作，同步执行
     // globalKeys['db'].open(dbname),
     // initpackinfo(),
