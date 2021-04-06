@@ -24,13 +24,12 @@ import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
 // import 'manager/screen_capture_manager.dart';
 
+// ignore: must_be_immutable
 class RtmpOutS extends LoginBase {
-  String _streamID = 's-beauty-camera';
+  String _streamID = '';
 
   bool _isPublishing = false;
   bool hidebtn = false; //隐藏按钮
-  int _previewViewID = -1;
-
   int beatnselect = 0;
   int _publishWidth = 0;
   int _publishHeight = 0;
@@ -524,10 +523,7 @@ class RtmpOutS extends LoginBase {
             },
             child: DecoratedBox(
               decoration: BoxDecoration(color: Colors.yellow),
-              child: RotatedBox(
-                quarterTurns: 0, //旋转180度(2/4圈)
-                child: RtmpBase.instance.getviewWidget(),
-              ),
+              child: RtmpBase.instance.getviewWidget(),
             ),
           ),
         ),

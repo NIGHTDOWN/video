@@ -15,19 +15,23 @@ class RtmpBase {
   bool isPublishing;
 
   int _previewViewID = -1;
+  int _playViewID = -1;
   RtmpBase._internal();
   int screenWidthPx;
   int screenHeightPx;
   //创建一个画板
-  ZegoCanvas _previewCanvas;
+  ZegoCanvas _previewCanvas, _playCanvas;
   //视频预览控件
-  Widget viewwidget;
+  Widget viewwidget, playwidget;
   Widget msgwidget;
   //极购创建的预览id
   //初始化
   init() {
-    screenWidthPx = g('w').toInt();
-    screenHeightPx = g('h').toInt();
+    // screenWidthPx = g('w').toInt();
+    // screenHeightPx = g('h').toInt();
+    screenWidthPx = 360;
+    screenHeightPx = 640;
+
     //设置流 源 为摄像头
     ZegoFaceunityPlugin.instance
         .setCustomVideoCaptureSource(ZegoCustomSourceType.Camera);
@@ -59,6 +63,45 @@ class RtmpBase {
     msgwidget = MsgWidget();
   }
 
+  //拉流初始化
+  pullinit() {
+    // screenWidthPx = g('w').toInt();
+    // screenHeightPx = g('h').toInt();
+    screenWidthPx = 360;
+    screenHeightPx = 640;
+    //设置流 源 为摄像头
+
+    // 销毁之前的预览页面
+    // stopplay();
+    // ZegoExpressEngine.instance.enableCustomVideoCapture(true);
+    // //设置流 源 为摄像头
+
+    //配置自定义采集位置为屏幕 ZegoVideoBufferType.SurfaceTexture
+    if (ZegoConfig.instance.enablePlatformView) {
+      //默认不支持这玩意
+      playwidget = ZegoExpressEngine.instance.createPlatformView((viewID) {
+        _startplayview(viewID);
+      });
+    } else {
+      // Create a Texture Renderer
+      //创建预览视频窗口
+      ZegoExpressEngine.instance
+          .createTextureRenderer(screenWidthPx, screenHeightPx)
+          .then((textureID) {
+        playwidget = Texture(textureId: textureID);
+        _startplayview(textureID);
+      });
+    }
+    msgwidget = MsgWidget();
+  }
+
+  void _startplayview(int viewID) {
+    // Set the preview canvas
+
+    _playViewID = viewID;
+    _playCanvas = ZegoCanvas.view(viewID);
+  }
+
   Widget getMsgWidget() {
     if (isnull(msgwidget)) {
       return msgwidget;
@@ -73,7 +116,6 @@ class RtmpBase {
     _previewCanvas = ZegoCanvas.view(viewID);
     // Start preview
     ZegoExpressEngine.instance.startPreview(canvas: _previewCanvas);
-    // }
   }
 
 //获取预览窗口
@@ -81,8 +123,18 @@ class RtmpBase {
     return viewwidget;
   }
 
+  getplayWidget() {
+    return playwidget;
+  }
+
   push(String _streamID) {
     ZegoExpressEngine.instance.startPublishingStream(_streamID);
+  }
+
+  pull(String _streamID) {
+    ZegoExpressEngine.instance
+        .startPlayingStream(_streamID, canvas: _playCanvas);
+    // ZegoExpressEngine.instance.startPublishingStream(_streamID);
   }
 
   stopview() {
@@ -92,6 +144,17 @@ class RtmpBase {
     } else {
       // Destroy preview texture renderer
       ZegoExpressEngine.instance.destroyTextureRenderer(_previewViewID);
+    }
+  }
+
+  stopplay() {
+    ZegoExpressEngine.instance.stopPlayingStream(ZegoConfig.instance.streamID);
+    if (ZegoConfig.instance.enablePlatformView) {
+      // Destroy preview platform view
+      ZegoExpressEngine.instance.destroyPlatformView(_playViewID);
+    } else {
+      // Destroy preview texture renderer
+      ZegoExpressEngine.instance.destroyTextureRenderer(_playViewID);
     }
   }
 

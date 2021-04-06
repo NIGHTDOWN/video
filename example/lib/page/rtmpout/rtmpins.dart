@@ -3,13 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:media_projection_creator/media_projection_creator.dart';
 import 'package:orientation/orientation.dart';
-
 import 'dart:core';
-
-import 'package:zego_faceunity_plugin/zego_faceunity_plugin.dart';
-
 import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:zego_faceunity_plugin_example/beauty_set.dart';
 import 'package:zego_faceunity_plugin_example/model/msg.dart';
@@ -19,18 +14,16 @@ import 'package:zego_faceunity_plugin_example/sellpage.dart';
 import 'package:zego_faceunity_plugin_example/tool/function.dart';
 import 'package:zego_faceunity_plugin_example/tool/global.dart';
 import 'package:zego_faceunity_plugin_example/utils/base.dart';
-
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
 // import 'manager/screen_capture_manager.dart';
 
 // ignore: must_be_immutable
-class RtmpOutH extends LoginBase {
+class RtmpInS extends LoginBase {
   String _streamID = '';
 
-  bool _isPublishing = false;
+  bool _isPlaying = false;
   bool hidebtn = false; //隐藏按钮
-
   int beatnselect = 0;
   int _publishWidth = 0;
   int _publishHeight = 0;
@@ -42,9 +35,7 @@ class RtmpOutH extends LoginBase {
   bool _isHardwareEncode = false;
   String _networkQuality = '';
   bool _isUseMic = true;
-  bool _isUseFrontCamera = true;
-  int left = 3;
-  int right = 1;
+
   int screenfx = 3; //横屏旋转方向
   TextEditingController _controller = new TextEditingController();
 
@@ -54,13 +45,12 @@ class RtmpOutH extends LoginBase {
       if (!mounted) {
         return;
       }
-      d(value);
-      if (DeviceOrientation.landscapeRight == value && screenfx != right) {
-        screenfx = right;
+      if (DeviceOrientation.landscapeLeft == value && screenfx != 1) {
+        screenfx = 1;
         reflash();
       }
-      if (DeviceOrientation.landscapeLeft == value && screenfx != left) {
-        screenfx = left;
+      if (DeviceOrientation.landscapeRight == value && screenfx != 3) {
+        screenfx = 3;
         reflash();
       }
       //这里旋转
@@ -72,13 +62,12 @@ class RtmpOutH extends LoginBase {
   void initState() {
     super.initState();
     //监听屏幕旋转
-    listScreenFx();
-    // getpmpw();
+    // listScreenFx();
+  
     if (ZegoConfig.instance.streamID.isNotEmpty) {
       _controller.text = ZegoConfig.instance.streamID;
     }
-    RtmpBase.instance.init();
-
+    RtmpBase.instance.pullinit();
     setPublisherCallback();
   }
 
@@ -90,7 +79,7 @@ class RtmpOutH extends LoginBase {
         Map<String, dynamic> extendedData) {
       if (errorCode == 0) {
         setState(() {
-          _isPublishing = true;
+          _isPlaying = true;
           // _title = '推送中..';
         });
 
@@ -100,7 +89,18 @@ class RtmpOutH extends LoginBase {
         d('Publish error: $errorCode');
       }
     };
-
+    ZegoExpressEngine.onPlayerStateUpdate = (String streamID,
+        ZegoPlayerState state,
+        int errorCode,
+        Map<String, dynamic> extendedData) {
+      print(
+          '🚩 📥 Player state update, state: $state, errorCode: $errorCode, streamID: $streamID');
+      setState(() {
+        _isPlaying = true;
+        ZegoConfig.instance.streamID = streamID;
+        ZegoConfig.instance.saveConfig();
+      });
+    };
     //接收消息
 
     //接收房间消息
@@ -153,37 +153,22 @@ class RtmpOutH extends LoginBase {
   void dispose() {
     super.dispose();
     screenS();
-    if (_isPublishing) {
+    if (_isPlaying) {
       // 销毁时停止推流
-      ZegoExpressEngine.instance.stopPublishingStream();
+      RtmpBase.instance.stopplay();
     }
   }
 
-  //推流
-  void onPublishButtonPressed() {
+  //拉流
+  void onPlayButtonPressed() {
     _streamID = _controller.text.trim();
     // Start publishing stream
     //开启推流
-    RtmpBase.instance.push(_streamID);
+    //
+
+    RtmpBase.instance.pull(_streamID);
   }
 
-  void onCamStateChanged() {
-    _isUseFrontCamera = !_isUseFrontCamera;
-    //改变摄像头
-    RtmpBase.instance.switchCamera(_isUseFrontCamera);
-  }
-
-  void onMicStateChanged() {
-    setState(() {
-      //关闭音频
-      _isUseMic = !_isUseMic;
-      RtmpBase.instance.micChanged(!_isUseMic);
-    });
-  }
-
-  void onVideoMirroModeChanged(int mode) {
-    //ZegoExpressEngine.instance.setVideoMirrorMode(ZegoVideoMirrorMode.values[mode]);
-  }
 //显示推流网络状态
   Widget showplayinfo() {
     // d(getscreeFx(context));
@@ -334,10 +319,10 @@ class RtmpOutH extends LoginBase {
               height: 60.0,
               child: CupertinoButton(
                 child: Text(
-                  '开始推流',
+                  '开始播放',
                   style: TextStyle(color: Colors.white),
                 ),
-                onPressed: onPublishButtonPressed,
+                onPressed: onPlayButtonPressed,
               ),
             )
           ],
@@ -345,10 +330,6 @@ class RtmpOutH extends LoginBase {
       ),
     );
   }
-
-  //屏幕流对象
-  // ScreenCaptureManager manager = ScreenCaptureManagerFactory.createManager();
-  //分享屏幕
 
 //显示推流时按钮
   Widget showPublishingToolPage() {
@@ -368,7 +349,7 @@ class RtmpOutH extends LoginBase {
             size: 44.0,
             color: Colors.white,
           ),
-          onPressed: onCamStateChanged,
+          // onPressed: onCamStateChanged,
         ),
         Expanded(
           child: CupertinoButton(
@@ -390,7 +371,7 @@ class RtmpOutH extends LoginBase {
             size: 44.0,
             color: Colors.white,
           ),
-          onPressed: onMicStateChanged,
+          // onPressed: onMicStateChanged,
         ),
       ],
     );
@@ -405,22 +386,7 @@ class RtmpOutH extends LoginBase {
         //     ),
         //     '分享屏幕',
         //     sharepm),
-        l2btn(
-            Icon(
-              Icons.auto_awesome,
-              size: 30.0,
-              color: Colors.white,
-            ),
-            '美颜',
-            showBottomSettingPage),
-        l2btn(
-            Icon(
-              Icons.shopping_cart,
-              size: 30.0,
-              color: Colors.white,
-            ),
-            '卖货',
-            showBottomsell),
+
         // Padding(padding: EdgeInsets.only(right: 10))
       ],
     );
@@ -445,68 +411,12 @@ class RtmpOutH extends LoginBase {
     );
   }
 
-//显示美颜设置
-  void showBottomSettingPage() {
-    setState(() {
-      hidebtn = true;
-    });
-    //美颜按钮
-    showModalBottomSheet<void>(
-      barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
-      backgroundColor: Colors.transparent,
-      context: context,
-      builder: (BuildContext context) {
-        return BeautySet();
-      },
-    );
-  }
-
-//显示卖货设置
-  void showBottomsell() {
-    setState(() {
-      hidebtn = true;
-    });
-    //卖货按钮
-    showModalBottomSheet<void>(
-      // barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
-      // backgroundColor: Colors.transparent,
-      backgroundColor: Color(0xff16181D),
-      context: context,
-      builder: (BuildContext context) {
-        return Sellpage();
-      },
-    );
-  }
-
-  void onSettingsButtonClicked() {
-    //显示美颜设置
-    showBottomSettingPage();
-  }
-
-  Widget l2btn(Widget img, String title, Function event) {
-    return CupertinoButton(
-      padding: const EdgeInsets.all(10.0),
-      pressedOpacity: 1.0,
-      borderRadius: BorderRadius.circular(0.0),
-      child: Column(
-        children: [
-          img,
-          Text(
-            title,
-            style: TextStyle(color: Colors.white, fontSize: 12),
-          )
-        ],
-      ),
-      onPressed: event,
-    );
-  }
-
 //停止推流
   void stop() {
-    if (_isPublishing) {
+    if (_isPlaying) {
       // 销毁时停止推流
-      _isPublishing = !_isPublishing;
-      RtmpBase.instance.stoppush();
+      _isPlaying = !_isPlaying;
+      RtmpBase.instance.stopplay();
       setState(() {});
     }
   }
@@ -528,14 +438,14 @@ class RtmpOutH extends LoginBase {
             child: DecoratedBox(
               decoration: BoxDecoration(color: Colors.yellow),
               child: RotatedBox(
-                quarterTurns: screenfx, //旋转180度(2/4圈)
-                child: RtmpBase.instance.getviewWidget(),
+                quarterTurns: 0, //旋转180度(2/4圈)
+                child: RtmpBase.instance.getplayWidget(),
               ),
             ),
           ),
         ),
         showmsg(),
-        _isPublishing
+        _isPlaying
             ? hidebtn
                 ? Container()
                 : showPublishingToolPage()

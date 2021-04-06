@@ -18,6 +18,7 @@ import 'package:zego_faceunity_plugin_example/tool/url.dart';
 import 'package:zego_faceunity_plugin_example/utils/zego_config.dart';
 
 import 'model/msg.dart';
+import 'page/rtmpout/rtmpins.dart';
 import 'page/rtmpout/rtmpouth.dart';
 import 'tool/global.dart';
 
@@ -62,9 +63,9 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
   void initState() {
     super.initState();
     // getpmpw();
-    if (ZegoConfig.instance.streamID.isNotEmpty) {
-      _controller.text = ZegoConfig.instance.streamID;
-    }
+    // if (ZegoConfig.instance.streamID.isNotEmpty) {
+    //   _controller.text = ZegoConfig.instance.streamID;
+    // }
     //设置流 源 为摄像头
     // ZegoFaceunityPlugin.instance
     //     .setCustomVideoCaptureSource(ZegoCustomSourceType.Camera);
@@ -106,109 +107,109 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     // }
   }
 
-  void setPublisherCallback() {
-    // 推流成功的回调处理事件
-    ZegoExpressEngine.onPublisherStateUpdate = (String streamID,
-        ZegoPublisherState state,
-        int errorCode,
-        Map<String, dynamic> extendedData) {
-      if (errorCode == 0) {
-        setState(() {
-          _isPublishing = true;
-          _title = '推送中..';
-        });
+  // void setPublisherCallback() {
+  //   // 推流成功的回调处理事件
+  //   ZegoExpressEngine.onPublisherStateUpdate = (String streamID,
+  //       ZegoPublisherState state,
+  //       int errorCode,
+  //       Map<String, dynamic> extendedData) {
+  //     if (errorCode == 0) {
+  //       setState(() {
+  //         _isPublishing = true;
+  //         _title = '推送中..';
+  //       });
 
-        ZegoConfig.instance.streamID = streamID;
-        ZegoConfig.instance.saveConfig();
-      } else {
-        d('Publish error: $errorCode');
-      }
-    };
-    //接收消息
-    ZegoExpressEngine.onIMRecvBroadcastMessage =
-        (String streamID, List<ZegoBroadcastMessageInfo> datas) {
-      d('接收到消息');
-      for (var data in datas) {
-        recvmsg(data.fromUser.userID, data.message);
-      }
-    };
-    ZegoExpressEngine.onRoomUserUpdate =
-        (String msg, ZegoUpdateType type, List<ZegoUser> users) {
-      d('新增用户');
-      for (var user in users) {
-        recvroom(user.userID, type);
-      }
-    };
-    //接收房间消息
+  //       ZegoConfig.instance.streamID = streamID;
+  //       ZegoConfig.instance.saveConfig();
+  //     } else {
+  //       d('Publish error: $errorCode');
+  //     }
+  //   };
+  //   //接收消息
+  //   ZegoExpressEngine.onIMRecvBroadcastMessage =
+  //       (String streamID, List<ZegoBroadcastMessageInfo> datas) {
+  //     d('接收到消息');
+  //     for (var data in datas) {
+  //       recvmsg(data.fromUser.userID, data.message);
+  //     }
+  //   };
+  //   ZegoExpressEngine.onRoomUserUpdate =
+  //       (String msg, ZegoUpdateType type, List<ZegoUser> users) {
+  //     d('新增用户');
+  //     for (var user in users) {
+  //       recvroom(user.userID, type);
+  //     }
+  //   };
+  //   //接收房间消息
 
-    // 推流质量变化处理
-    ZegoExpressEngine.onPublisherQualityUpdate =
-        (String streamID, ZegoPublishStreamQuality quality) {
-      setState(() {
-        //推流动态信息
-        _publishCaptureFPS = quality.videoCaptureFPS;
-        _publishEncodeFPS = quality.videoEncodeFPS;
-        _publishSendFPS = quality.videoSendFPS;
-        _publishVideoBitrate = quality.videoKBPS;
-        _publishAudioBitrate = quality.audioKBPS;
-        _isHardwareEncode = quality.isHardwareEncode;
+  //   // 推流质量变化处理
+  //   ZegoExpressEngine.onPublisherQualityUpdate =
+  //       (String streamID, ZegoPublishStreamQuality quality) {
+  //     setState(() {
+  //       //推流动态信息
+  //       _publishCaptureFPS = quality.videoCaptureFPS;
+  //       _publishEncodeFPS = quality.videoEncodeFPS;
+  //       _publishSendFPS = quality.videoSendFPS;
+  //       _publishVideoBitrate = quality.videoKBPS;
+  //       _publishAudioBitrate = quality.audioKBPS;
+  //       _isHardwareEncode = quality.isHardwareEncode;
 
-        switch (quality.level) {
-          case ZegoStreamQualityLevel.Excellent:
-            _networkQuality = '☀️';
-            break;
-          case ZegoStreamQualityLevel.Good:
-            _networkQuality = '⛅️️';
-            break;
-          case ZegoStreamQualityLevel.Medium:
-            _networkQuality = '☁️';
-            break;
-          case ZegoStreamQualityLevel.Bad:
-            _networkQuality = '🌧';
-            break;
-          case ZegoStreamQualityLevel.Die:
-            _networkQuality = '❌';
-            break;
-          default:
-            break;
-        }
-      });
-    };
+  //       switch (quality.level) {
+  //         case ZegoStreamQualityLevel.Excellent:
+  //           _networkQuality = '☀️';
+  //           break;
+  //         case ZegoStreamQualityLevel.Good:
+  //           _networkQuality = '⛅️️';
+  //           break;
+  //         case ZegoStreamQualityLevel.Medium:
+  //           _networkQuality = '☁️';
+  //           break;
+  //         case ZegoStreamQualityLevel.Bad:
+  //           _networkQuality = '🌧';
+  //           break;
+  //         case ZegoStreamQualityLevel.Die:
+  //           _networkQuality = '❌';
+  //           break;
+  //         default:
+  //           break;
+  //       }
+  //     });
+  //   };
 
-    // 视频尺寸改变回调处理
-    ZegoExpressEngine.onPublisherVideoSizeChanged =
-        (int width, int height, ZegoPublishChannel channel) {
-      setState(() {
-        _publishWidth = width;
-        _publishHeight = height;
-      });
-    };
-  }
+  //   // 视频尺寸改变回调处理
+  //   ZegoExpressEngine.onPublisherVideoSizeChanged =
+  //       (int width, int height, ZegoPublishChannel channel) {
+  //     setState(() {
+  //       _publishWidth = width;
+  //       _publishHeight = height;
+  //     });
+  //   };
+  // }
 
   //接收用户房间消息
-  recvroom(userid, ZegoUpdateType msg) {
-    Msg msgobj;
-    if (msg == ZegoUpdateType.Add) {
-      msgobj = Msg.inroom(userid);
-    } else {
-      msgobj = Msg.outroom(userid);
-    }
-    msgin(msgobj);
-  }
+  // recvroom(userid, ZegoUpdateType msg) {
+  //   Msg msgobj;
+  //   if (msg == ZegoUpdateType.Add) {
+  //     msgobj = Msg.inroom(userid);
+  //   } else {
+  //     msgobj = Msg.outroom(userid);
+  //   }
+  //   msgin(msgobj);
+  // }
 
   //接收用户消息
-  recvmsg(userid, msg) {
-    d(userid);
-    d(msg);
-  }
+  // recvmsg(userid, msg) {
+  //   d(userid);
+  //   d(msg);
+  // }
 
-  void startPreview(int viewID) {
-    // Set the preview canvas
-    _previewCanvas = ZegoCanvas.view(viewID);
+  // void startPreview(int viewID) {
+  //   // Set the preview canvas
+  //   _previewCanvas = ZegoCanvas.view(viewID);
 
-    // Start preview
-    ZegoExpressEngine.instance.startPreview(canvas: _previewCanvas);
-  }
+  //   // Start preview
+  //   ZegoExpressEngine.instance.startPreview(canvas: _previewCanvas);
+  // }
 
   @override
   void dispose() {
@@ -253,125 +254,125 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
     gourl(context, RtmpOutS());
   }
 
-  void onCamStateChanged() {
-    _isUseFrontCamera = !_isUseFrontCamera;
-    //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
-    //改变摄像头
-    ZegoFaceunityPlugin.instance.switchCamera(
-        _isUseFrontCamera ? ZegoCameraPosition.Front : ZegoCameraPosition.Back);
-  }
+  // void onCamStateChanged() {
+  //   _isUseFrontCamera = !_isUseFrontCamera;
+  //   //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
+  //   //改变摄像头
+  //   ZegoFaceunityPlugin.instance.switchCamera(
+  //       _isUseFrontCamera ? ZegoCameraPosition.Front : ZegoCameraPosition.Back);
+  // }
 
-  void onpmChanged() {
-    // _isUseFrontCamera = !_isUseFrontCamera;
-    //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
-    //改变摄像头
-    ZegoFaceunityPlugin.instance
-        .setCustomVideoCaptureSource(ZegoCustomSourceType.SurfaceTexture);
-  }
+  // void onpmChanged() {
+  //   // _isUseFrontCamera = !_isUseFrontCamera;
+  //   //ZegoExpressEngine.instance.useFrontCamera(_isUseFrontCamera);
+  //   //改变摄像头
+  //   ZegoFaceunityPlugin.instance
+  //       .setCustomVideoCaptureSource(ZegoCustomSourceType.SurfaceTexture);
+  // }
 
-  void onMicStateChanged() {
-    setState(() {
-      //关闭音频
-      _isUseMic = !_isUseMic;
-      ZegoExpressEngine.instance.muteMicrophone(!_isUseMic);
-    });
-  }
+  // void onMicStateChanged() {
+  //   setState(() {
+  //     //关闭音频
+  //     _isUseMic = !_isUseMic;
+  //     ZegoExpressEngine.instance.muteMicrophone(!_isUseMic);
+  //   });
+  // }
 
-  void onVideoMirroModeChanged(int mode) {
-    //ZegoExpressEngine.instance.setVideoMirrorMode(ZegoVideoMirrorMode.values[mode]);
-  }
+  // void onVideoMirroModeChanged(int mode) {
+  //   //ZegoExpressEngine.instance.setVideoMirrorMode(ZegoVideoMirrorMode.values[mode]);
+  // }
 //显示推流网络状态
-  Widget showplayinfo() {
-    // d(getscreeFx(context));
-    return Container(
-        child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 10.0),
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'RoomID: ${ZegoConfig.instance.roomID} |  StreamID: ${ZegoConfig.instance.streamID}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'Rendering with: ${ZegoConfig.instance.enablePlatformView ? 'PlatformView' : 'TextureRenderer'}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'Resolution: $_publishWidth x $_publishHeight',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'FPS(Capture): ${_publishCaptureFPS.toStringAsFixed(2)}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'FPS(Encode): ${_publishEncodeFPS.toStringAsFixed(2)}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'FPS(Send): ${_publishSendFPS.toStringAsFixed(2)}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'Bitrate(Video): ${_publishVideoBitrate.toStringAsFixed(2)} kb/s',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'Bitrate(Audio): ${_publishAudioBitrate.toStringAsFixed(2)} kb/s',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'HardwareEncode: ${_isHardwareEncode ? '✅' : '❎'}',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Text(
-              'NetworkQuality: $_networkQuality',
-              style: TextStyle(color: Colors.white, fontSize: 9),
-            ),
-          ],
-        ),
-      ],
-    ));
-  }
+  // Widget showplayinfo() {
+  //   // d(getscreeFx(context));
+  //   return Container(
+  //       child: Column(
+  //     children: [
+  //       Padding(
+  //         padding: const EdgeInsets.only(top: 10.0),
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'RoomID: ${ZegoConfig.instance.roomID} |  StreamID: ${ZegoConfig.instance.streamID}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'Rendering with: ${ZegoConfig.instance.enablePlatformView ? 'PlatformView' : 'TextureRenderer'}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'Resolution: $_publishWidth x $_publishHeight',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'FPS(Capture): ${_publishCaptureFPS.toStringAsFixed(2)}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'FPS(Encode): ${_publishEncodeFPS.toStringAsFixed(2)}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'FPS(Send): ${_publishSendFPS.toStringAsFixed(2)}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'Bitrate(Video): ${_publishVideoBitrate.toStringAsFixed(2)} kb/s',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'Bitrate(Audio): ${_publishAudioBitrate.toStringAsFixed(2)} kb/s',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'HardwareEncode: ${_isHardwareEncode ? '✅' : '❎'}',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //       Row(
+  //         children: <Widget>[
+  //           Text(
+  //             'NetworkQuality: $_networkQuality',
+  //             style: TextStyle(color: Colors.white, fontSize: 9),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   ));
+  // }
 
 //显示开始推流按钮
   Widget showPreviewToolPage() {
@@ -439,6 +440,9 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
                 },
               ),
             ),
+            SizedBox(
+              height: 10,
+            ),
             Container(
               padding: const EdgeInsets.all(0.0),
               decoration: BoxDecoration(
@@ -457,6 +461,27 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
                   gourl(context, RtmpOutH());
                 },
               ),
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Container(
+              padding: const EdgeInsets.all(0.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12.0),
+                color: Color(0xee0e88eb),
+              ),
+              width: 240.0,
+              height: 60.0,
+              child: CupertinoButton(
+                child: Text(
+                  '竖屏拉流',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () async {
+                  gourl(context, RtmpInS());
+                },
+              ),
             )
           ],
         ),
@@ -465,232 +490,225 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
   }
 
   //获取录屏授权
-  getpmpw() async {
-    int errorCode = await MediaProjectionCreator.createMediaProjection();
-    if (errorCode != MediaProjectionCreator.ERROR_CODE_SUCCEED) {
-      print('Can not get screen capture permission');
-      return false;
-    }
-  }
+  // getpmpw() async {
+  //   int errorCode = await MediaProjectionCreator.createMediaProjection();
+  //   if (errorCode != MediaProjectionCreator.ERROR_CODE_SUCCEED) {
+  //     print('Can not get screen capture permission');
+  //     return false;
+  //   }
+  // }
 
   //屏幕流对象
   // ScreenCaptureManager manager = ScreenCaptureManagerFactory.createManager();
   //分享屏幕
-  sharepm() async {
-    //停止推流
-    ZegoExpressEngine.instance.stopPublishingStream();
-    ZegoExpressEngine.instance.stopPreview();
-    //屏幕授权
-    if (ZegoConfig.instance.enablePlatformView) {
-      // Destroy preview platform view
-      ZegoExpressEngine.instance.destroyPlatformView(_previewViewID);
-    } else {
-      // Destroy preview texture renderer
-      ZegoExpressEngine.instance.destroyTextureRenderer(_previewViewID);
-    }
-    ZegoExpressEngine.instance.logoutRoom(ZegoConfig.instance.roomID);
-    //移除视频源
-    ZegoFaceunityPlugin.instance.removeCustomVideoCaptureSource();
-    //
-    ZegoExpressEngine.instance.enableCustomVideoCapture(false);
+  // sharepm() async {
+  //   //停止推流
+  //   ZegoExpressEngine.instance.stopPublishingStream();
+  //   ZegoExpressEngine.instance.stopPreview();
+  //   //屏幕授权
+  //   if (ZegoConfig.instance.enablePlatformView) {
+  //     // Destroy preview platform view
+  //     ZegoExpressEngine.instance.destroyPlatformView(_previewViewID);
+  //   } else {
+  //     // Destroy preview texture renderer
+  //     ZegoExpressEngine.instance.destroyTextureRenderer(_previewViewID);
+  //   }
+  //   ZegoExpressEngine.instance.logoutRoom(ZegoConfig.instance.roomID);
+  //   //移除视频源
+  //   ZegoFaceunityPlugin.instance.removeCustomVideoCaptureSource();
+  //   //
+  //   ZegoExpressEngine.instance.enableCustomVideoCapture(false);
 
-    // await ZegoExpressEngine.createEngine(
-    //     appID, appSign, isTestEnv, ZegoScenario.General);
-    ZegoExpressEngine.createEngine(
-        ZegoConfig.instance.appID,
-        ZegoConfig.instance.appSign,
-        ZegoConfig.instance.isTestEnv,
-        ZegoScenario.values[0],
-        enablePlatformView: ZegoConfig.instance.enablePlatformView);
+  //   // await ZegoExpressEngine.createEngine(
+  //   //     appID, appSign, isTestEnv, ZegoScenario.General);
+  //   ZegoExpressEngine.createEngine(
+  //       ZegoConfig.instance.appID,
+  //       ZegoConfig.instance.appSign,
+  //       ZegoConfig.instance.isTestEnv,
+  //       ZegoScenario.values[0],
+  //       enablePlatformView: ZegoConfig.instance.enablePlatformView);
 
-    /// Developers need to write native Android code to access native ZegoExpressEngine
-    await ZegoExpressEngine.instance.enableCustomVideoCapture(true,
-        config:
-            ZegoCustomVideoCaptureConfig(ZegoVideoBufferType.SurfaceTexture));
+  //   /// Developers need to write native Android code to access native ZegoExpressEngine
+  //   await ZegoExpressEngine.instance.enableCustomVideoCapture(true,
+  //       config:
+  //           ZegoCustomVideoCaptureConfig(ZegoVideoBufferType.SurfaceTexture));
 
-    await ZegoExpressEngine.instance.setVideoConfig(ZegoVideoConfig(
-        MediaQuery.of(context).size.width.toInt(),
-        MediaQuery.of(context).size.height.toInt(),
-        MediaQuery.of(context).size.width.toInt(),
-        MediaQuery.of(context).size.height.toInt(),
-        15,
-        3000,
-        ZegoVideoCodecID.Default));
-    // await ZegoExpressEngine.instance
-    //     .loginRoom(roomID, ZegoUser(userID, userName));
-    ZegoUser user =
-        ZegoUser(ZegoConfig.instance.userID, ZegoConfig.instance.userName);
+  //   await ZegoExpressEngine.instance.setVideoConfig(ZegoVideoConfig(
+  //       MediaQuery.of(context).size.width.toInt(),
+  //       MediaQuery.of(context).size.height.toInt(),
+  //       MediaQuery.of(context).size.width.toInt(),
+  //       MediaQuery.of(context).size.height.toInt(),
+  //       15,
+  //       3000,
+  //       ZegoVideoCodecID.Default));
+  //   // await ZegoExpressEngine.instance
+  //   //     .loginRoom(roomID, ZegoUser(userID, userName));
+  //   ZegoUser user =
+  //       ZegoUser(ZegoConfig.instance.userID, ZegoConfig.instance.userName);
 
-    // 登入房间
-    ZegoExpressEngine.instance.loginRoom(ZegoConfig.instance.roomID, user);
-    await ZegoExpressEngine.instance.startPublishingStream(_streamID);
+  //   // 登入房间
+  //   ZegoExpressEngine.instance.loginRoom(ZegoConfig.instance.roomID, user);
+  //   await ZegoExpressEngine.instance.startPublishingStream(_streamID);
 
-    // Start screen capture
-    // await manager.startScreenCapture();
-    // onPublishButtonPressed();
-    setState(() {});
-  }
+  //   // Start screen capture
+  //   // await manager.startScreenCapture();
+  //   // onPublishButtonPressed();
+  //   setState(() {});
+  // }
 
 //显示推流时按钮
-  Widget showPublishingToolPage() {
-    //显示直播状态的相关参数
-    Widget l1btns = Row(
-      children: <Widget>[
-        CupertinoButton(
-          padding: const EdgeInsets.all(20.0),
-          pressedOpacity: 1.0,
-          borderRadius: BorderRadius.circular(0.0),
-          // child: Image(
-          //   width: 44.0,
-          //   image: ImageIcon
-          // ),
-          child: Icon(
-            Icons.switch_camera,
-            size: 44.0,
-            color: Colors.white,
-          ),
-          onPressed: onCamStateChanged,
-        ),
-        Expanded(
-          child: CupertinoButton(
-            padding: const EdgeInsets.only(
-                top: 10.0, bottom: 10, left: 16, right: 16),
-            pressedOpacity: 1.0,
-            borderRadius: BorderRadius.circular(20.0),
-            color: Colors.red,
-            child: Text('结束直播'),
-            onPressed: stop,
-          ),
-        ),
-        CupertinoButton(
-          padding: const EdgeInsets.all(20.0),
-          pressedOpacity: 1.0,
-          borderRadius: BorderRadius.circular(0.0),
-          child: Icon(
-            _isUseMic ? Icons.mic_none : Icons.mic_off,
-            size: 44.0,
-            color: Colors.white,
-          ),
-          onPressed: onMicStateChanged,
-        ),
-      ],
-    );
-    Widget l2btns = Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: <Widget>[
-        // l2btn(
-        //     Icon(
-        //       Icons.cast,
-        //       size: 30.0,
-        //       color: Colors.white,
-        //     ),
-        //     '分享屏幕',
-        //     sharepm),
-        l2btn(
-            Icon(
-              Icons.auto_awesome,
-              size: 30.0,
-              color: Colors.white,
-            ),
-            '美颜',
-            showBottomSettingPage),
-        l2btn(
-            Icon(
-              Icons.shopping_cart,
-              size: 30.0,
-              color: Colors.white,
-            ),
-            '卖货',
-            showBottomsell),
-        // Padding(padding: EdgeInsets.only(right: 10))
-      ],
-    );
+  // Widget showPublishingToolPage() {
+  //   //显示直播状态的相关参数
+  //   Widget l1btns = Row(
+  //     children: <Widget>[
+  //       CupertinoButton(
+  //         padding: const EdgeInsets.all(20.0),
+  //         pressedOpacity: 1.0,
+  //         borderRadius: BorderRadius.circular(0.0),
+  //         // child: Image(
+  //         //   width: 44.0,
+  //         //   image: ImageIcon
+  //         // ),
+  //         child: Icon(
+  //           Icons.switch_camera,
+  //           size: 44.0,
+  //           color: Colors.white,
+  //         ),
+  //         onPressed: onCamStateChanged,
+  //       ),
+  //       Expanded(
+  //         child: CupertinoButton(
+  //           padding: const EdgeInsets.only(
+  //               top: 10.0, bottom: 10, left: 16, right: 16),
+  //           pressedOpacity: 1.0,
+  //           borderRadius: BorderRadius.circular(20.0),
+  //           color: Colors.red,
+  //           child: Text('结束直播'),
+  //           onPressed: stop,
+  //         ),
+  //       ),
+  //       CupertinoButton(
+  //         padding: const EdgeInsets.all(20.0),
+  //         pressedOpacity: 1.0,
+  //         borderRadius: BorderRadius.circular(0.0),
+  //         child: Icon(
+  //           _isUseMic ? Icons.mic_none : Icons.mic_off,
+  //           size: 44.0,
+  //           color: Colors.white,
+  //         ),
+  //         onPressed: onMicStateChanged,
+  //       ),
+  //     ],
+  //   );
+  //   Widget l2btns = Row(
+  //     mainAxisAlignment: MainAxisAlignment.end,
+  //     children: <Widget>[
+  //       // l2btn(
+  //       //     Icon(
+  //       //       Icons.cast,
+  //       //       size: 30.0,
+  //       //       color: Colors.white,
+  //       //     ),
+  //       //     '分享屏幕',
+  //       //     sharepm),
+  //       l2btn(
+  //           Icon(
+  //             Icons.auto_awesome,
+  //             size: 30.0,
+  //             color: Colors.white,
+  //           ),
+  //           '美颜',
+  //           showBottomSettingPage),
+  //       l2btn(
+  //           Icon(
+  //             Icons.shopping_cart,
+  //             size: 30.0,
+  //             color: Colors.white,
+  //           ),
+  //           '卖货',
+  //           showBottomsell),
+  //       // Padding(padding: EdgeInsets.only(right: 10))
+  //     ],
+  //   );
 
-    return Container(
-      padding: EdgeInsets.only(
-          left: 10.0,
-          right: 10.0,
-          bottom: MediaQuery.of(context).padding.bottom + 20.0),
-      child: Column(
-        children: <Widget>[
-          //这里是推流网络信息
-          showplayinfo(),
-          Expanded(
-            child: Padding(padding: const EdgeInsets.only(top: 10.0)),
-          ),
-          l2btns,
-          l1btns,
-          //这里是底部按钮信息
-        ],
-      ),
-    );
-  }
+  //   return Container(
+  //     padding: EdgeInsets.only(
+  //         left: 10.0,
+  //         right: 10.0,
+  //         bottom: MediaQuery.of(context).padding.bottom + 20.0),
+  //     child: Column(
+  //       children: <Widget>[
+  //         //这里是推流网络信息
+  //         showplayinfo(),
+  //         Expanded(
+  //           child: Padding(padding: const EdgeInsets.only(top: 10.0)),
+  //         ),
+  //         l2btns,
+  //         l1btns,
+  //         //这里是底部按钮信息
+  //       ],
+  //     ),
+  //   );
+  // }
 
 //显示美颜设置
-  void showBottomSettingPage() {
-    setState(() {
-      hidebtn = true;
-    });
-    //美颜按钮
-    showModalBottomSheet<void>(
-      barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
-      backgroundColor: Colors.transparent,
-      context: context,
-      builder: (BuildContext context) {
-        return BeautySet();
-      },
-    );
-  }
+//   void showBottomSettingPage() {
+//     setState(() {
+//       hidebtn = true;
+//     });
+//     //美颜按钮
+//     showModalBottomSheet<void>(
+//       barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
+//       backgroundColor: Colors.transparent,
+//       context: context,
+//       builder: (BuildContext context) {
+//         return BeautySet();
+//       },
+//     );
+//   }
 
-//显示卖货设置
-  void showBottomsell() {
-    setState(() {
-      hidebtn = true;
-    });
-    //卖货按钮
-    showModalBottomSheet<void>(
-      // barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
-      // backgroundColor: Colors.transparent,
-      backgroundColor: Color(0xff16181D),
-      context: context,
-      builder: (BuildContext context) {
-        return Sellpage();
-      },
-    );
-  }
+// //显示卖货设置
+//   void showBottomsell() {
+//     setState(() {
+//       hidebtn = true;
+//     });
+//     //卖货按钮
+//     showModalBottomSheet<void>(
+//       // barrierColor: Color.fromRGBO(0, 0, 0, 0.1),
+//       // backgroundColor: Colors.transparent,
+//       backgroundColor: Color(0xff16181D),
+//       context: context,
+//       builder: (BuildContext context) {
+//         return Sellpage();
+//       },
+//     );
+//   }
 
-  void onSettingsButtonClicked() {
-    //显示美颜设置
-    showBottomSettingPage();
-  }
+//   void onSettingsButtonClicked() {
+//     //显示美颜设置
+//     showBottomSettingPage();
+//   }
 
-  Widget l2btn(Widget img, String title, Function event) {
-    return CupertinoButton(
-      padding: const EdgeInsets.all(10.0),
-      pressedOpacity: 1.0,
-      borderRadius: BorderRadius.circular(0.0),
-      child: Column(
-        children: [
-          img,
-          Text(
-            title,
-            style: TextStyle(color: Colors.white, fontSize: 12),
-          )
-        ],
-      ),
-      onPressed: event,
-    );
-  }
+//   Widget l2btn(Widget img, String title, Function event) {
+//     return CupertinoButton(
+//       padding: const EdgeInsets.all(10.0),
+//       pressedOpacity: 1.0,
+//       borderRadius: BorderRadius.circular(0.0),
+//       child: Column(
+//         children: [
+//           img,
+//           Text(
+//             title,
+//             style: TextStyle(color: Colors.white, fontSize: 12),
+//           )
+//         ],
+//       ),
+//       onPressed: event,
+//     );
+//   }
 
 //停止推流
-  void stop() {
-    if (_isPublishing) {
-      // 销毁时停止推流
-      _isPublishing = !_isPublishing;
-      ZegoExpressEngine.instance.stopPublishingStream();
-      setState(() {});
-    }
-  }
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -708,34 +726,12 @@ class _BeautyCameraPageState extends State<BeautyCameraPage> {
               },
               child: _previewViewWidget),
         ),
-        _isPublishing
-            ? hidebtn
-                ? Container()
-                : showPublishingToolPage()
-            : showPreviewToolPage(),
+        showPreviewToolPage()
       ],
     ));
   }
 
-  List msg = [];
-  //消息显示款
-  ScrollController _scrollController = new ScrollController();
-
-  msgin(Msg obj) {
-    //插入要显示的消息
-    setState(() {
-      msg.insert(0, obj);
-    });
-    _msglast();
-  }
-
-  _msglast() {
-    _scrollController.animateTo(
-      0.0,
-      curve: Curves.easeOut,
-      duration: const Duration(milliseconds: 300),
-    );
-  }
+  
 }
 
 //去掉滚动水波纹效果
